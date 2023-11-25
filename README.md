@@ -9,7 +9,7 @@ Here are some simulations of blockchain consensus protocol based on [NS3](https:
 
 #### 1.Download ns3
 
-The version [3.29](https://www.nsnam.org/releases/ns-3-29/download/) or [3.25](https://www.nsnam.org/releases/ns-3-25/download/) of NS3 is recommended.
+The version [3.34](https://www.nsnam.org/releases/ns-3-34/download/) of NS3 is recommended.
 
 #### 2.Place code
 
