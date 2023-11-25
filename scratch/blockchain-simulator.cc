@@ -9,18 +9,18 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("BlockchainSimulator");
 
-// 创建网络
+// Create network
 void startSimulator (int N)
 {
   NodeContainer nodes;
   nodes.Create (N);
 
   NetworkHelper networkHelper (N);
-  // 默认pointToPint只能连接两个节点，需要手动连接
+  // By default pointToPoint can only connect two nodes and needs to be connected manually.
   NetDeviceContainer devices;
   PointToPointHelper pointToPoint;
 
-  // 节点总带宽24Mbps，分到每一个点对点通道上为3Mbps
+  // The total node bandwidth is 24Mbps, and each point-to-point channel is 3Mbps.
   pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("3Mbps"));
   pointToPoint.SetChannelAttribute ("Delay", StringValue ("3ms"));
   uint32_t nNodes = nodes.GetN ();
@@ -31,7 +31,7 @@ void startSimulator (int N)
   Ipv4AddressHelper address;
   address.SetBase ("1.0.0.0", "255.255.255.0");
 
-  // 网络节点两两建立连接
+  // Network nodes establish connections two by two
   for (int i = 0; i < N; i++) {
       for (int j = 0; j < N && j != i; j++) {
           Ipv4InterfaceContainer interface;
@@ -45,8 +45,8 @@ void startSimulator (int N)
           networkHelper.m_nodesConnectionsIps[i].push_back(interface.GetAddress(1));
           networkHelper.m_nodesConnectionsIps[j].push_back(interface.GetAddress(0));
 
-          // 创建新的网络: 如果不增加网络的话, 所有ip都在一个字网，而最后一块device会覆盖之前的设置，导致无法通过ip访问到之前的邻居节点
-          // 应该的设置：每个device连接的两个节点在一个字网内，所以每分配一次ip，地址应该增加一个网段
+           // Create a new network: If you do not add a network, all IPs will be in the same network, and the last device will overwrite the previous settings, making it impossible to access previous neighbor nodes through IPs.
+          // Proper settings: The two nodes connected to each device are in the same subnet, so each time an IP is assigned, the address should be increased by one network segment.
           address.NewNetwork();
       }
   }
@@ -56,11 +56,11 @@ void startSimulator (int N)
   nodeApp.Stop (Seconds (10.0));
 
   NS_LOG_INFO("Enable pcap tracing");
-  pointToPoint.EnablePcapAll ("Paxos");
+  pointToPoint.EnablePcapAll ("Raft");
 
-  AnimationInterface anim ("PaxosBlockchain.xml");
+  AnimationInterface anim ("RaftBlockchain.xml");
   
-  NS_LOG_INFO("Run Paxos Simulation");
+  NS_LOG_INFO("Run Raft Simulation");
 
   Simulator::Run ();
   Simulator::Destroy ();
@@ -79,7 +79,7 @@ main (int argc, char *argv[])
   Time::SetResolution (Time::NS);
 
   // 1.need changed to a specific protocol class
-  LogComponentEnable ("PaxosNode", LOG_LEVEL_INFO);
+  LogComponentEnable ("RaftNode", LOG_LEVEL_INFO);
 
   // start the simulator
   startSimulator(N);
