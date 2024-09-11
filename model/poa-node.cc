@@ -1,3 +1,4 @@
+#include "ns3/core-module.h"  // Pastikan modul ini diimpor untuk menggunakan Time
 #include "ns3/address.h"
 #include "ns3/address-utils.h"
 #include "ns3/log.h"
@@ -20,6 +21,7 @@
 
 int tx_size = 200;                   // the size of tx, in KB
 int tx_speed = 2000;                 // the rate of transaction generation, in op/s
+int max_blocks = 50;                 // Maximum number of blocks to process
 
 namespace ns3 {
 
@@ -38,7 +40,7 @@ PoaNode::GetTypeId (void)
     return tid;
 }
 
-PoaNode::PoaNode(void) : is_validator(false) {}
+PoaNode::PoaNode(void) : is_validator(false), blockNum(0) {}
 
 PoaNode::~PoaNode(void) {
     NS_LOG_FUNCTION (this);
@@ -64,13 +66,14 @@ static float getRandomDelay() {
 void 
 PoaNode::StartApplication ()            
 {
+    m_startTime = Simulator::Now();  // Catat waktu mulai simulasi
+
     DetermineValidator();
     m_value = 0;
     proposal = intToChar(m_id);
     heartbeat_timeout = 0.05;
     add_change_value = 0;
     round = 0;
-    blockNum = 0;
 
     if (!m_socket)
     {
@@ -101,8 +104,15 @@ PoaNode::StartApplication ()
 void 
 PoaNode::StopApplication ()
 {
-    NS_LOG_INFO("Blocks:" << blockNum << " Rounds:" << round);
-    NS_LOG_INFO("At time " << Simulator::Now ().GetSeconds () << " Stop");
+    Time endTime = Simulator::Now();  // Catat waktu selesai simulasi
+    Time duration = endTime - m_startTime;  // Hitung durasi simulasi
+
+    NS_LOG_INFO("Node " << m_id << " has stopped after creating " << blockNum << " blocks.");
+    NS_LOG_INFO("Total simulation time: " << duration.GetSeconds() << " seconds.");
+    NS_LOG_INFO("At time " << Simulator::Now ().GetSeconds () << "s, simulation stopped.");
+
+    // Log tambahan untuk menunjukkan durasi simulasi
+    std::cout << "Simulation completed in " << duration.GetSeconds() << " seconds." << std::endl;
 }
 
 void 
@@ -166,13 +176,27 @@ void
 PoaNode::CreateBlock()
 {
     if (is_validator) {
-        NS_LOG_INFO("Validator " << m_id << " is creating a block.");
+        NS_LOG_INFO("Validator " << m_id << " is creating block " << blockNum + 1);
+
+        if (blockNum >= max_blocks) {  // Batas jumlah blok
+            NS_LOG_INFO("Node " << m_id << " has created " << blockNum << " blocks. Stopping simulation.");
+
+            // Menampilkan waktu simulasi saat simulasi dihentikan
+            Time endTime = Simulator::Now();  // Catat waktu selesai simulasi
+            Time duration = endTime - m_startTime;  // Hitung durasi simulasi
+            std::cout << "Simulation completed in " << duration.GetSeconds() << " seconds." << std::endl;
+
+            Simulator::Stop(); // Hentikan simulasi setelah jumlah blok yang ditentukan tercapai
+            return;
+        }
 
         uint8_t data[tx_size];
         for (int i = 0; i < tx_size; i++) {
             data[i] = '1'; 
         }
         SendBlock(data);
+
+        blockNum++;  // Tingkatkan jumlah blok yang telah dibuat
 
         m_nextBlock = Simulator::Schedule(Seconds(1.0), &PoaNode::CreateBlock, this);
     }
